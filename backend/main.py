@@ -3,14 +3,14 @@ import json
 from aiohttp import web
 from aiogram import Bot, Dispatcher, types, F
 from aiogram.filters import Command
-from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo, MenuButtonWebApp
 
 import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from config import BOT_TOKEN, PORT
+from config import BOT_TOKEN, PORT, MINI_APP_URL
 from themes import THEMES
 from searcher import (
     search_tracks,
@@ -48,9 +48,8 @@ async def cmd_start(message: types.Message):
     )
 
     buttons = []
-    mini_app_url = os.getenv("MINI_APP_URL", "")
-    if mini_app_url.startswith("https://"):
-        buttons.append([InlineKeyboardButton(text="🎧 Открыть TMA Плеер", web_app=WebAppInfo(url=mini_app_url))])
+    if MINI_APP_URL and MINI_APP_URL.startswith("https://"):
+        buttons.append([InlineKeyboardButton(text="🎧 Открыть TMA Плеер", web_app=WebAppInfo(url=MINI_APP_URL))])
 
     buttons.append([
         InlineKeyboardButton(text="🔥 Phonk", callback_data="theme:phonk"),
@@ -197,6 +196,7 @@ def cors_response(data, status=200):
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Private-Network": "true",
     })
 
 async def handle_options(request):
@@ -204,6 +204,7 @@ async def handle_options(request):
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Allow-Private-Network": "true",
     })
 
 async def api_health(request):
@@ -319,6 +320,18 @@ async def main():
 
     # Start Bot Polling
     print("🤖 Starting Telegram Bot polling (@phazmalistplayer_bot)...")
+    try:
+        if MINI_APP_URL:
+            await bot.set_chat_menu_button(
+                menu_button=MenuButtonWebApp(
+                    text="🎧 Плеер",
+                    web_app=WebAppInfo(url=MINI_APP_URL)
+                )
+            )
+            print(f"📱 TMA Menu button configured: {MINI_APP_URL}")
+    except Exception as e:
+        print(f"⚠️ Could not set menu button: {e}")
+
     try:
         await dp.start_polling(bot)
     finally:
