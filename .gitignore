@@ -1,0 +1,5 @@
+node_modules/
+.env
+backend/temp_audio/
+*.log
+.DS_Store
